@@ -1,9 +1,18 @@
+import { BrowserRouter, Routes, Route, } from 'react-router-dom';
+import Main from './page/Main';
+import ScentLens from './page/Scentlens';
+
 
 function App() {
   return (
-    <div className="App">
-      <h1>김강현 바보</h1>
-    </div>
+    <>
+    <BrowserRouter>
+    <Routes>
+      <Route path='/' element={<Main/>}/>
+      <Route path='scentlens' element={<ScentLens/>}/>
+    </Routes>
+    </BrowserRouter>
+    </>
   );
 }
 

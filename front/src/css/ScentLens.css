@@ -1,0 +1,91 @@
+/* 전체 컨테이너 */
+.lens-scent-lens {
+    width: 100%;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    position: relative;
+    overflow: hidden;
+}
+
+/* 배경 테마 */
+.lens-scent-lens.default {
+    background: linear-gradient(to bottom, #f7f7f7, #ffffff);
+}
+
+.lens-scent-lens.floral {
+    background: linear-gradient(to bottom, rgba(255, 192, 203, 0.6), rgba(255, 255, 255, 0.3));
+}
+
+.lens-scent-lens.woody {
+    background: linear-gradient(to bottom, rgba(85, 107, 47, 0.6), rgba(34, 49, 24, 0.4));
+}
+
+.lens-scent-lens.oriental {
+    background: radial-gradient(circle, rgba(255, 215, 0, 0.4), rgba(255, 223, 186, 0.2));
+}
+
+/* 로딩 메시지 */
+.lens-loading-message {
+    font-size: 1.2rem;
+    color: #666;
+    text-align: center;
+    margin-top: 20px;
+}
+
+/* 향수 카드 */
+.lens-perfume-card {
+    background: rgba(255, 255, 255, 0.9);
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    text-align: center;
+    width: 300px;
+    max-width: 90%;
+    height: 40%;
+    animation: lens-fadeIn 0.5s ease-in-out;
+    border: 1px solid #EFEDED;
+}
+
+.lens-perfume-image {
+    width: 100px;
+    height: 100px;
+    margin: 0 auto 15px;
+    display: block;
+    margin-bottom: 30px;
+}
+
+.lens-perfume-name {
+    font-size: 20px;
+    margin: 10px 0;
+    margin-bottom: 25px;
+}
+
+.lens-perfume-brand {
+    font-size: 14px;
+    color: #555;
+    margin: 5px 0;
+    margin-top: 30px;
+}
+
+.lens-perfume-description {
+    font-size: 16px;
+    margin-top: 80px;
+    word-break: break-word;
+    white-space: normal;
+}
+
+/* 추가 애니메이션 */
+@keyframes lens-fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(50px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
