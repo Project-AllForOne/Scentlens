@@ -3,7 +3,7 @@ import "../css/Main.css"
 import LoadingScreen from "./loading/LoadingScreen";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import ImageCropper from "./image-crop/ImageCropper";
+import ImageCropper from "./image/ImageCropper";
 
 const Main = () => {
     const [isLoading, setIsLoading] = useState(false);
