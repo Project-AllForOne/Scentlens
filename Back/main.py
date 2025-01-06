@@ -1,4 +1,5 @@
 from fastapi import FastAPI, File, UploadFile
+from fastapi.middleware.cors import CORSMiddleware
 import numpy as np
 from transformers import AutoModel
 from PIL import Image
@@ -6,9 +7,17 @@ import io, os, requests, json, hashlib, torch
 from rembg import remove
 import faiss
 
-os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
+os.environ["KMP_DUPLICATE_LIB_OK"] = "True"
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],  # React 앱이 실행되는 도메인
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # 캐시 디렉토리 설정
 CACHE_DIR = "./image_cache"
@@ -17,7 +26,7 @@ os.makedirs(CACHE_DIR, exist_ok=True)
 os.makedirs(EMBEDDING_CACHE_DIR, exist_ok=True)
 
 # CLIP 모델 로드
-model = AutoModel.from_pretrained('jinaai/jina-clip-v2', trust_remote_code=True)
+model = AutoModel.from_pretrained("jinaai/jina-clip-v2", trust_remote_code=True)
 
 # JSON 향수 정보 로드
 try:
@@ -28,9 +37,11 @@ except Exception as e:
     print(f"Failed to load JSON file: {e}")
     perfume_image_data = []
 
+
 # URL 해시 생성 함수
 def generate_hash(url):
-    return hashlib.md5(url.encode('utf-8')).hexdigest()
+    return hashlib.md5(url.encode("utf-8")).hexdigest()
+
 
 # URL에서 이미지를 다운로드하고 캐싱하는 함수
 def download_image_with_cache(url):
@@ -55,9 +66,11 @@ def download_image_with_cache(url):
     # 로컬에서 이미지 열기
     return Image.open(local_path).convert("RGB")
 
+
 # 임베딩 생성 함수
 def compute_embedding(image):
     return model.encode_image(image)
+
 
 # 임베딩 캐싱 함수
 def get_or_compute_embedding(image, url):
@@ -77,6 +90,7 @@ def get_or_compute_embedding(image, url):
     # 임베딩 저장
     np.save(embedding_path, embedding)
     return embedding
+
 
 # 데이터베이스 이미지 임베딩 생성
 db_images = []
@@ -110,7 +124,8 @@ if db_embeddings:
 else:
     print("No embeddings generated. Initializing empty FAISS index.")
     res = faiss.StandardGpuResources()
-    index = faiss.GpuIndexFlatIP(res, 1)     # 빈 인덱스 생성
+    index = faiss.GpuIndexFlatIP(res, 1)  # 빈 인덱스 생성
+
 
 @app.post("/get_perfume_details/")
 async def search_image(file: UploadFile = File(...)):
@@ -147,9 +162,10 @@ async def search_image(file: UploadFile = File(...)):
                 "index": int(i),
                 "id": db_images[i]["id"],
                 "url": db_images[i]["url"],
-                "similarity": float(D[0][idx])  # 코사인 유사도 점수
+                "similarity": float(D[0][idx]),  # 코사인 유사도 점수
             }
-            for idx, i in enumerate(I[0]) if float(D[0][idx]) > threshold
+            for idx, i in enumerate(I[0])
+            if float(D[0][idx]) > threshold
         ]
 
         with open("perfume.json", "r", encoding="utf-8") as f:
@@ -165,13 +181,26 @@ async def search_image(file: UploadFile = File(...)):
                 "name": item["name"],
                 "brand": item["brand"],
                 "description": item["description"],
-                "similarity": next((result["similarity"] for result in results if result["id"] == item["id"]), None),
-                "url": next((result["url"] for result in results if result["id"] == item["id"]), None)
+                "similarity": next(
+                    (
+                        result["similarity"]
+                        for result in results
+                        if result["id"] == item["id"]
+                    ),
+                    None,
+                ),
+                "url": next(
+                    (result["url"] for result in results if result["id"] == item["id"]),
+                    None,
+                ),
             }
-            for item in perfume_data if item["id"] in ids
+            for item in perfume_data
+            if item["id"] in ids
         ]
 
-        matching_perfumes = sorted(matching_perfumes, key=lambda x: x["similarity"], reverse=True)
+        matching_perfumes = sorted(
+            matching_perfumes, key=lambda x: x["similarity"], reverse=True
+        )
 
         return {"perfumes": matching_perfumes}
     except Exception as e:
