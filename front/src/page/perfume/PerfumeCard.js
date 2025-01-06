@@ -12,7 +12,7 @@ const PerfumeCard = ({ perfume, currentTheme }) => {
         >
             {/* 향수 이미지 */}
             <motion.img
-                src={perfume.image}
+                src={perfume.url}
                 alt={perfume.name}
                 className="lens-perfume-image"
             />

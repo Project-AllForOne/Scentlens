@@ -46,7 +46,7 @@ const PerfumeCarousel = ({ perfumes, currentIndex, setCurrentIndex, title, curre
                         // 클릭 해당 향수로 이동
                         onClick={() => setCurrentIndex(idx)}
                     >
-                        <img src={perfume.image} alt={perfume.name} />
+                        <img src={perfume.url} alt={perfume.name} />
                     </div>
                 ))}
             </div>
