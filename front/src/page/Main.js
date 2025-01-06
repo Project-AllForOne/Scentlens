@@ -29,9 +29,16 @@ const Main = () => {
     const handleCropComplete = (croppedImage) => {
         setIsLoading(true);
 
+        console.log("cropped", croppedImage);
+
+        // Blob 형식인 croppedImage를 file 형식으로 변환
+        const file = new File([croppedImage], "croppedImage.jpg", { type: "image/jpeg" });
+
+        console.log("cropped image to file", file);
+
         try {
             const formData = new FormData();
-            formData.append("file", croppedImage);
+            formData.append("file", file);
 
             const response = axios.post("http://localhost:8000/get_perfume_details/", formData, {
                 headers: {
@@ -39,7 +46,7 @@ const Main = () => {
                 },
             });
 
-            console.log("Response", response.data);
+            console.log("Response", response);
 
             // 결과를 저장하거나 다른 페이지로 이동
             setIsLoading(false);

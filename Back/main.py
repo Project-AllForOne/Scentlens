@@ -60,9 +60,7 @@ def download_image_with_cache(url):
 
 # 임베딩 생성 함수
 def compute_embedding(image):
-    inputs = processor(images=image, return_tensors="pt").to(device)
-    outputs = model.get_image_features(**inputs)
-    return outputs
+    return model.encode_image(image)
 
 
 # 임베딩 캐싱 함수
@@ -122,10 +120,6 @@ else:
 
 @app.post("/get_perfume_details/")
 async def search_image(file: UploadFile = File(...)):
-    if not file:
-        return {"error": "No file uploaded."}
-    print(f"Received file: {file.filename}")
-
     image_bytes = await file.read()
 
     try:
@@ -175,15 +169,21 @@ async def search_image(file: UploadFile = File(...)):
         matching_perfumes = [
             {
                 "id": item["id"],
-                "name": item[
-                    "name"
-                ],  # Add any other fields you need from the perfume data
+                "name": item["name"],
                 "brand": item["brand"],
                 "description": item["description"],
+                "similarity": next(
+                    (
+                        result["similarity"]
+                        for result in results
+                        if result["id"] == item["id"]
+                    ),
+                    None,
+                ),
                 "url": next(
                     (result["url"] for result in results if result["id"] == item["id"]),
                     None,
-                ),  # Get URL based on ID match
+                ),
             }
             for item in perfume_data
             if item["id"] in ids
