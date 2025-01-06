@@ -116,7 +116,7 @@ else:
     res = faiss.StandardGpuResources()
     index = faiss.GpuIndexFlatIP(res, 1)     # 빈 인덱스 생성
 
-@app.post("/get_similarity/")
+@app.post("/get_perfume_details/")
 async def search_image(file: UploadFile = File(...)):
     image_bytes = await file.read()
 
@@ -134,6 +134,7 @@ async def search_image(file: UploadFile = File(...)):
         white_background = Image.new("RGBA", output_image.size, "WHITE")
         white_background.paste(output_image, mask=output_image)
         final_image = white_background.convert("RGB")
+        # final_image.show()
 
         # 업로드된 이미지 임베딩 계산
         query_embedding = compute_embedding(final_image).flatten()
@@ -154,22 +155,23 @@ async def search_image(file: UploadFile = File(...)):
             for idx, i in enumerate(I[0]) if float(D[0][idx]) > threshold
         ]
 
-        return {"results": results}
-    except Exception as e:
-        print(f"Error during search: {e}")
-        return {"error": str(e)}
-
-@app.post("/get_perfume_details/")
-async def get_perfume_details(similarity_results: dict):
-    try:
         with open("perfume.json", "r", encoding="utf-8") as f:
             perfume_data = json.load(f)
 
         # ID 추출
-        ids = [result["id"] for result in similarity_results.get("results", [])]
+        ids = [result["id"] for result in results]
 
         # 해당 ID에 대한 향수 정보 반환
-        matching_perfumes = [item for item in perfume_data if item["id"] in ids]
+        matching_perfumes = [
+            {
+                "id": item["id"],
+                "name": item["name"],  # Add any other fields you need from the perfume data
+                "brand": item["brand"],
+                "description": item["description"],
+                "url": next((result["url"] for result in results if result["id"] == item["id"]), None)  # Get URL based on ID match
+            }
+            for item in perfume_data if item["id"] in ids
+        ]
 
         return {"perfumes": matching_perfumes}
     except Exception as e:
