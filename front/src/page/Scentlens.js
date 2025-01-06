@@ -23,6 +23,7 @@ function ScentLens() {
                     results: similarityResults,
                 });
                 setSearchedPerfumes(response.data.perfumes || []);
+                console.log(response.data.perfumes);
             } catch (error) {
                 console.error('향수 데이터를 불러오는 데 실패했습니다.', error);
             }
