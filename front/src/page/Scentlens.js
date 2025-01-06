@@ -5,6 +5,7 @@ import PerfumeCard from './perfume/PerfumeCard';
 import '../css/ScentLens.css';
 import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
+import { useTheme } from './ThemeEffect';
 
 function ScentLens() {
     const navigate = useNavigate(); // 페이지 이동 함수
@@ -53,8 +54,10 @@ function ScentLens() {
         }
     };
 
+    const currentTheme = useTheme();
+
     return (
-        <div className={`lens-scent-lens ${searchedPerfumes[currentIndex]?.theme || 'default'}`}>
+        <div className={`lens-scent-lens ${currentTheme}`}>
             {/* 뒤로가기 버튼 추가 */}
             <button
                 className="back-button"
@@ -92,7 +95,7 @@ function ScentLens() {
 
             {/* 추가 향수 섹션 - showMore가 true일 때 표시 */}
             {showMore && (
-                <div className={`additional-section ${morePerfumes[0]?.theme || 'default'}`}>
+                <div className={`additional-section ${currentTheme}`}>
                     <h2>추가 유사 향수</h2>
                     <div className="additional-perfumes">
                         {morePerfumes.map((perfume, index) => (

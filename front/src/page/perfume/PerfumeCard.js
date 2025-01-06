@@ -3,11 +3,11 @@ import { motion } from 'framer-motion';
 
 // PerfumeCard 컴포넌트 : 개별 향수 정보를 카드 형태로 표시
 // perfume prop으로 향수 정보(이미지, 이름, 브랜드, 설명, 유사도 등)를 받음
-const PerfumeCard = ({ perfume }) => {
+const PerfumeCard = ({ perfume, currentTheme }) => {
     return (
         // motion.div 컴포넌트 : 애니메이션 효과를 적용한 컨테이너 요소
         <motion.div
-            className={`lens-perfume-card ${perfume.theme || 'default'}`}
+            className={`lens-perfume-card ${currentTheme}`}
             whileHover={{ scale: 1.02 }}
         >
             {/* 향수 이미지 */}
