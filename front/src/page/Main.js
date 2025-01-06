@@ -26,21 +26,19 @@ const Main = () => {
     }
 
     // 크롭 완료 시 처리
-    const handleCropComplete = (croppedImage) => {
+    const handleCropComplete = async (croppedImage) => {
+        if (!croppedImage) return;
         setIsLoading(true);
 
-        console.log("cropped", croppedImage);
-
-        // Blob 형식인 croppedImage를 file 형식으로 변환
-        const file = new File([croppedImage], "croppedImage.jpg", { type: "image/jpeg" });
-
-        console.log("cropped image to file", file);
 
         try {
+            const blob = await fetch(croppedImage).then((r) => r.blob());
+            const file = new File([blob], "croppedImage.jpg", { type: "image/jpeg" });
+
             const formData = new FormData();
             formData.append("file", file);
 
-            const response = axios.post("http://localhost:8000/get_perfume_details/", formData, {
+            const response = await axios.post("http://localhost:8000/get_perfume_details/", formData, {
                 headers: {
                     "Content-Type": "multipart/form-data",
                 },

@@ -13,7 +13,7 @@ app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],  # React 앱이 실행되는 도메인
+    allow_origins=["*"],  # React 앱이 실행되는 도메인
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
