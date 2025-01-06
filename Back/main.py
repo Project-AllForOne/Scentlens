@@ -1,6 +1,6 @@
 from fastapi import FastAPI, File, UploadFile
 import numpy as np
-from transformers import CLIPProcessor, CLIPModel
+from transformers import AutoModel
 from PIL import Image
 import io, os, requests, json, hashlib, torch
 from rembg import remove
@@ -16,10 +16,8 @@ EMBEDDING_CACHE_DIR = "./embedding_cache"
 os.makedirs(CACHE_DIR, exist_ok=True)
 os.makedirs(EMBEDDING_CACHE_DIR, exist_ok=True)
 
-# CLIP 모델 및 프로세서 로드 (GPU로 설정)
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-model = CLIPModel.from_pretrained("openai/clip-vit-large-patch14").to(device)
-processor = CLIPProcessor.from_pretrained("openai/clip-vit-large-patch14")
+# CLIP 모델 로드
+model = AutoModel.from_pretrained("jinaai/jina-clip-v2", trust_remote_code=True)
 
 # JSON 향수 정보 로드
 try:
@@ -76,14 +74,14 @@ def get_or_compute_embedding(image, url):
     # 캐시된 임베딩 파일이 존재하면 불러오기
     if os.path.exists(embedding_path):
         print(f"Using cached embedding for URL: {url}")
-        return torch.tensor(np.load(embedding_path)).to(device)
+        return torch.tensor(np.load(embedding_path))
 
     # 임베딩 생성
     print(f"Computing embedding for URL: {url}")
     embedding = compute_embedding(image).flatten()
 
     # 임베딩 저장
-    np.save(embedding_path, embedding.cpu().numpy())
+    np.save(embedding_path, embedding)
     return embedding
 
 
@@ -105,7 +103,7 @@ for item in perfume_image_data:
 
 # NumPy 배열로 변환 및 FAISS 인덱스 초기화
 if db_embeddings:
-    db_embeddings = torch.stack(db_embeddings).to(device)  # Keep on GPU
+    db_embeddings = torch.stack(db_embeddings)  # Keep on GPU
     print(f"Embeddings tensor shape: {db_embeddings.shape}")
 
     # 코사인 유사도를 위한 임베딩 정규화
@@ -115,7 +113,7 @@ if db_embeddings:
     dimension = db_embeddings.shape[1]
     res = faiss.StandardGpuResources()
     index = faiss.GpuIndexFlatIP(res, dimension)
-    index.add(db_embeddings.cpu().numpy())  # Add normalized embeddings
+    index.add(db_embeddings)  # Add normalized embeddings
 else:
     print("No embeddings generated. Initializing empty FAISS index.")
     res = faiss.StandardGpuResources()
@@ -144,11 +142,12 @@ async def search_image(file: UploadFile = File(...)):
         white_background = Image.new("RGBA", output_image.size, "WHITE")
         white_background.paste(output_image, mask=output_image)
         final_image = white_background.convert("RGB")
-        # final_image.show()
 
         # 업로드된 이미지 임베딩 계산
         query_embedding = compute_embedding(final_image).flatten()
-        query_embedding = query_embedding / query_embedding.norm()  # Normalize
+        # query_embedding = query_embedding / query_embedding.norm()  # Normalize
+        query_embedding = torch.tensor(query_embedding)
+        query_embedding = query_embedding / query_embedding.norm()
 
         # FAISS 인덱스에서 검색
         D, I = index.search(query_embedding.cpu().detach().numpy().reshape(1, -1), k=10)
@@ -189,6 +188,10 @@ async def search_image(file: UploadFile = File(...)):
             for item in perfume_data
             if item["id"] in ids
         ]
+
+        matching_perfumes = sorted(
+            matching_perfumes, key=lambda x: x["similarity"], reverse=True
+        )
 
         return {"perfumes": matching_perfumes}
     except Exception as e:
