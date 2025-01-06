@@ -6,7 +6,7 @@ import io, os, requests, json, hashlib, torch
 from rembg import remove
 import faiss
 
-os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
+os.environ["KMP_DUPLICATE_LIB_OK"] = "True"
 
 app = FastAPI()
 
@@ -30,9 +30,11 @@ except Exception as e:
     print(f"Failed to load JSON file: {e}")
     perfume_image_data = []
 
+
 # URL 해시 생성 함수
 def generate_hash(url):
-    return hashlib.md5(url.encode('utf-8')).hexdigest()
+    return hashlib.md5(url.encode("utf-8")).hexdigest()
+
 
 # URL에서 이미지를 다운로드하고 캐싱하는 함수
 def download_image_with_cache(url):
@@ -57,11 +59,13 @@ def download_image_with_cache(url):
     # 로컬에서 이미지 열기
     return Image.open(local_path).convert("RGB")
 
+
 # 임베딩 생성 함수
 def compute_embedding(image):
     inputs = processor(images=image, return_tensors="pt").to(device)
     outputs = model.get_image_features(**inputs)
     return outputs
+
 
 # 임베딩 캐싱 함수
 def get_or_compute_embedding(image, url):
@@ -81,6 +85,7 @@ def get_or_compute_embedding(image, url):
     # 임베딩 저장
     np.save(embedding_path, embedding.cpu().numpy())
     return embedding
+
 
 # 데이터베이스 이미지 임베딩 생성
 db_images = []
@@ -114,10 +119,15 @@ if db_embeddings:
 else:
     print("No embeddings generated. Initializing empty FAISS index.")
     res = faiss.StandardGpuResources()
-    index = faiss.GpuIndexFlatIP(res, 1)     # 빈 인덱스 생성
+    index = faiss.GpuIndexFlatIP(res, 1)  # 빈 인덱스 생성
+
 
 @app.post("/get_perfume_details/")
 async def search_image(file: UploadFile = File(...)):
+    if not file:
+        return {"error": "No file uploaded."}
+    print(f"Received file: {file.filename}")
+
     image_bytes = await file.read()
 
     try:
@@ -150,9 +160,10 @@ async def search_image(file: UploadFile = File(...)):
                 "index": int(i),
                 "id": db_images[i]["id"],
                 "url": db_images[i]["url"],
-                "similarity": float(D[0][idx])  # 코사인 유사도 점수
+                "similarity": float(D[0][idx]),  # 코사인 유사도 점수
             }
-            for idx, i in enumerate(I[0]) if float(D[0][idx]) > threshold
+            for idx, i in enumerate(I[0])
+            if float(D[0][idx]) > threshold
         ]
 
         with open("perfume.json", "r", encoding="utf-8") as f:
@@ -165,12 +176,18 @@ async def search_image(file: UploadFile = File(...)):
         matching_perfumes = [
             {
                 "id": item["id"],
-                "name": item["name"],  # Add any other fields you need from the perfume data
+                "name": item[
+                    "name"
+                ],  # Add any other fields you need from the perfume data
                 "brand": item["brand"],
                 "description": item["description"],
-                "url": next((result["url"] for result in results if result["id"] == item["id"]), None)  # Get URL based on ID match
+                "url": next(
+                    (result["url"] for result in results if result["id"] == item["id"]),
+                    None,
+                ),  # Get URL based on ID match
             }
-            for item in perfume_data if item["id"] in ids
+            for item in perfume_data
+            if item["id"] in ids
         ]
 
         return {"perfumes": matching_perfumes}

@@ -1,37 +1,21 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { motion } from 'framer-motion';
-import PerfumeCarousel from './perfume/PerfumeCarousel';
-import PerfumeCard from './perfume/PerfumeCard';
-import '../css/ScentLens.css';
 import { useNavigate, useLocation } from 'react-router-dom';
-import axios from 'axios';
+import { motion } from 'framer-motion';
+import PerfumeCard from './perfume/PerfumeCard';
+import PerfumeCarousel from './perfume/PerfumeCarousel';
+import '../css/ScentLens.css';
 import { useTheme } from './ThemeEffect';
 
 function ScentLens() {
-    const navigate = useNavigate(); // 페이지 이동 함수
-    const location = useLocation(); // location.state로 전달된 데이터 확인
-    const [searchedPerfumes, setSearchedPerfumes] = useState([]);   // 검색된 향수 데이터
-    const [morePerfumes, setMorePerfumes] = useState([]); // 추가 5개 향수 데이터
-    const [currentIndex, setCurrentIndex] = useState(0);    // 현재 향수 인덱스
-    const [showMore, setShowMore] = useState(false);    // 추가 향수 섹션 보이기 여부
-
-    useEffect(() => {
-        const fetchPerfumeDetails = async () => {
-            try {
-                const similarityResults = location.state?.results || [];
-                const response = await axios.post('http://localhost:8000/get_perfume_details/', {
-                    results: similarityResults,
-                });
-                setSearchedPerfumes(response.data.perfumes || []);
-                console.log(response.data.perfumes);
-            } catch (error) {
-                console.error('향수 데이터를 불러오는 데 실패했습니다.', error);
-            }
-        };
-
-        fetchPerfumeDetails();
-    }, [location.state?.results]);
-
+    const navigate = useNavigate();
+    const location = useLocation();
+    const perfumes = location.state?.perfumes || []; // 검색된 향수 데이터
+    const searchedPerfumes = perfumes.slice(0, 5);   // 검색된 향수 데이터
+    const morePerfumes = perfumes.slice(-5); // 추가 5개 향수 데이터
+    const [currentIndex, setCurrentIndex] = useState(0);
+    const [showMore, setShowMore] = useState(false);
+    const additionalSectionRef = useRef(null);
+    const currentTheme = useTheme();
 
     // 메인 캐러셀 자동 슬라이드 효과
     // 3초마다 다음 향수로 자동 전환
@@ -41,8 +25,6 @@ function ScentLens() {
         }, 3000);
         return () => clearInterval(timer);
     }, [searchedPerfumes.length]);
-
-    const additionalSectionRef = useRef(null);
 
     // 더보기/접기 버튼 클릭 시 실행되는 함수
     const handleMoreClick = () => {
@@ -54,8 +36,6 @@ function ScentLens() {
             }, 100);
         }
     };
-
-    const currentTheme = useTheme();
 
     return (
         <div className={`lens-scent-lens ${currentTheme}`}>
