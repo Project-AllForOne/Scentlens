@@ -1,4 +1,5 @@
 from fastapi import FastAPI, File, UploadFile
+from fastapi.middleware.cors import CORSMiddleware
 import numpy as np
 from transformers import AutoModel
 from PIL import Image
@@ -9,6 +10,14 @@ import faiss
 os.environ["KMP_DUPLICATE_LIB_OK"] = "True"
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],  # React 앱이 실행되는 도메인
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # 캐시 디렉토리 설정
 CACHE_DIR = "./image_cache"
