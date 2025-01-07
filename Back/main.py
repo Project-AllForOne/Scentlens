@@ -26,7 +26,8 @@ os.makedirs(CACHE_DIR, exist_ok=True)
 os.makedirs(EMBEDDING_CACHE_DIR, exist_ok=True)
 
 # CLIP 모델 로드
-model = AutoModel.from_pretrained("jinaai/jina-clip-v2", trust_remote_code=True)
+device = "cuda" if torch.cuda.is_available() else "cpu"
+model = AutoModel.from_pretrained("jinaai/jina-clip-v2", trust_remote_code=True).to(device)
 
 # JSON 향수 정보 로드
 try:
