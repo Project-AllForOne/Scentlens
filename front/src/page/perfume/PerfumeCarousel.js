@@ -25,7 +25,10 @@ const PerfumeCarousel = ({ perfumes, currentIndex, setCurrentIndex, title }) => 
                     animate={{ opacity: 1, x: 0 }}
                     // 왼쪽으로 사라지는 종료 애니메이션
                     exit={{ opacity: 0, x: -100 }}
-                    transition={{ duration: 0.5 }}
+                    transition={{ 
+                        duration: 0.8,  // 애니메이션 지속 시간 증가
+                        ease: "easeInOut"  // 부드러운 이징 함수 적용
+                    }}
                 >
                     {/* 현재 선택된 향수 카드 표시 */}
                     <PerfumeCard perfume={perfumes[currentIndex]} />
