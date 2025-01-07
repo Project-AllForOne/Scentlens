@@ -198,12 +198,14 @@
     display: inline-block;
     padding: 1rem 2rem;
     background: transparent;
-    border: 2px solid #CDC6CE;
     color: black;
     border-radius: 30px;
     font-size: 1.1rem;
     cursor: pointer;
     transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    background-color: #ffffff;
+    border: none;
 }
 
 .more-button:hover {
