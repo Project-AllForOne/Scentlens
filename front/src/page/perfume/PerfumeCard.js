@@ -23,10 +23,6 @@ const PerfumeCard = ({ perfume, currentTheme }) => {
                 <p className="lens-perfume-brand">{perfume.brand}</p>
                 {/* 향수 설명 */}
                 <p className="lens-perfume-description">{perfume.description}</p>
-                {/* 향수 유사도 */}
-                <div className="lens-perfume-similarity">
-                    이미지 유사도: {perfume.similarity}
-                </div>
             </div>
         </motion.div>
     );

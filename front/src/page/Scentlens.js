@@ -22,7 +22,7 @@ function ScentLens() {
     useEffect(() => {
         const timer = setInterval(() => {
             setCurrentIndex((prev) => (prev + 1) % searchedPerfumes.length);
-        }, 3000);
+        }, 5000);
         return () => clearInterval(timer);
     }, [searchedPerfumes.length]);
 
