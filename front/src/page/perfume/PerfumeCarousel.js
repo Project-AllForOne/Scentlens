@@ -8,7 +8,7 @@ import PerfumeCard from './PerfumeCard';
 // - currentIndex: 현재 선택된 향수의 인덱스
 // - setCurrentIndex: 현재 인덱스를 변경하는 함수
 // - title: 캐러셀 섹션의 제목
-const PerfumeCarousel = ({ perfumes, currentIndex, setCurrentIndex, title }) => {
+const PerfumeCarousel = ({ perfumes, currentIndex, setCurrentIndex, title, currentTheme }) => {
     return (
         <section className="carousel-section">
             <h2>{title}</h2>
@@ -28,7 +28,10 @@ const PerfumeCarousel = ({ perfumes, currentIndex, setCurrentIndex, title }) => 
                     transition={{ duration: 0.5 }}
                 >
                     {/* 현재 선택된 향수 카드 표시 */}
-                    <PerfumeCard perfume={perfumes[currentIndex]} />
+                    <PerfumeCard 
+                        perfume={perfumes[currentIndex]} 
+                        currentTheme={currentTheme}
+                    />
                 </motion.div>
             </AnimatePresence>
 
@@ -43,7 +46,7 @@ const PerfumeCarousel = ({ perfumes, currentIndex, setCurrentIndex, title }) => 
                         // 클릭 해당 향수로 이동
                         onClick={() => setCurrentIndex(idx)}
                     >
-                        <img src={perfume.image} alt={perfume.name} />
+                        <img src={perfume.url} alt={perfume.name} />
                     </div>
                 ))}
             </div>

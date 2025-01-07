@@ -4,6 +4,7 @@ import LoadingScreen from "./loading/LoadingScreen";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import ImageCropper from "./image/ImageCropper";
+import axios from "axios";
 
 const Main = () => {
     const [isLoading, setIsLoading] = useState(false);
@@ -25,15 +26,34 @@ const Main = () => {
     }
 
     // 크롭 완료 시 처리
-    const handleCropComplete = (croppedImage) => {
+    const handleCropComplete = async (croppedImage) => {
+        if (!croppedImage) return;
         setIsLoading(true);
-        console.log("Cropped Image:", croppedImage);
 
-        setTimeout(() => {
+
+        try {
+            const blob = await fetch(croppedImage).then((r) => r.blob());
+            const file = new File([blob], "croppedImage.jpg", { type: "image/jpeg" });
+
+            const formData = new FormData();
+            formData.append("file", file);
+
+            const response = await axios.post("http://localhost:8000/get_perfume_details/", formData, {
+                headers: {
+                    "Content-Type": "multipart/form-data",
+                },
+            });
+
+            console.log("Response", response);
+
+            // 결과를 저장하거나 다른 페이지로 이동
             setIsLoading(false);
             setIsModalOpen(false);
-            handlePageTransition();
-        }, 3000);
+            navigate("/scentlens", { state: { perfumes: response.data.perfumes } });
+        } catch (error) {
+            console.error("Error", error);
+            setIsLoading(false);
+        }
     };
 
     // 취소 버튼 처리
