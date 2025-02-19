@@ -38,7 +38,7 @@ const Main = () => {
             const formData = new FormData();
             formData.append("file", file);
 
-            const response = await axios.post("http://localhost:8000/get_perfume_details/", formData, {
+            const response = await axios.post("http://localhost:8000/get_product_details/", formData, {
                 headers: {
                     "Content-Type": "multipart/form-data",
                 },
@@ -49,7 +49,7 @@ const Main = () => {
             // 결과를 저장하거나 다른 페이지로 이동
             setIsLoading(false);
             setIsModalOpen(false);
-            navigate("/scentlens", { state: { perfumes: response.data.perfumes } });
+            navigate("/scentlens", { state: { perfumes: response.data.products } });
         } catch (error) {
             console.error("Error", error);
             setIsLoading(false);
