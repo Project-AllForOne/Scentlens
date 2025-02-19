@@ -8,7 +8,7 @@ from PIL import Image
 import io, os, hashlib, torch, requests, logging
 from rembg import remove
 import numpy as np
-from schemas import PerfumeImageItem, PerfumeImageResult, PerfumeEmbeddingResult
+from schemas import ProductImageItem, ProductImageResult, ProductEmbeddingResult
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -30,10 +30,10 @@ def generate_hash(url):
     return hashlib.md5(url.encode("utf-8")).hexdigest()
 
 # URL에서 이미지를 다운로드하고 캐싱하는 함수
-@app.post("/download_images/", response_model=List[PerfumeImageResult])
-async def download_image_with_cache(perfume_image_data: List[PerfumeImageItem]):
+@app.post("/download_images/", response_model=List[ProductImageResult])
+async def download_image_with_cache(product_image_data: List[ProductImageItem]):
     results = []
-    for item in perfume_image_data:
+    for item in product_image_data:
         try:
             filename = os.path.basename(item.url.split("?")[0])  # Remove query parameters
             local_path = os.path.join(CACHE_DIR, filename)
@@ -41,7 +41,7 @@ async def download_image_with_cache(perfume_image_data: List[PerfumeImageItem]):
             # 이미 캐시된 이미지인지 확인
             if os.path.exists(local_path):
                 logger.info(f"Using cached image: {local_path}")
-                results.append({"id": item.id, "url": item.url, "local_path": local_path, "status": "success"})
+                results.append({"id": item.id, "url": item.url, "product_id": item.product_id, "local_path": local_path, "status": "success"})
             else:
                 logger.info(f"Downloading image: {item.url}")
                 response = requests.get(item.url, stream=True)
@@ -51,18 +51,18 @@ async def download_image_with_cache(perfume_image_data: List[PerfumeImageItem]):
                 with open(local_path, "wb") as f:
                     f.write(response.content)
 
-                results.append({"id": item.id, "url": item.url, "local_path": local_path, "status": "success"})
+                results.append({"id": item.id, "url": item.url, "product_id": item.product_id, "local_path": local_path, "status": "success"})
         except Exception as e:
             logger.error(f"Failed to process image ID {item.id} from URL {item.url}: {e}")
-            results.append({"id": item.id, "url": item.url, "error": str(e), "status": "failed"})
+            results.append({"id": item.id, "url": item.url, "product_id": item.product_id, "error": str(e), "status": "failed"})
 
     return results
 
 # 임베딩 생성 또는 캐싱
-@app.post("/get_or_compute_embeddings/", response_model=List[PerfumeEmbeddingResult])
-async def get_or_compute_embeddings(downloaded_perfume_image_data: List[PerfumeImageResult]):
+@app.post("/get_or_compute_embeddings/", response_model=List[ProductEmbeddingResult])
+async def get_or_compute_embeddings(downloaded_product_image_data: List[ProductImageResult]):
     results = []
-    for item in downloaded_perfume_image_data:
+    for item in downloaded_product_image_data:
         try:
             # URL 기반으로 해시 생성
             url_hash = generate_hash(item.url)
@@ -72,7 +72,7 @@ async def get_or_compute_embeddings(downloaded_perfume_image_data: List[PerfumeI
             if os.path.exists(embedding_path):
                 logger.info(f"Using cached embedding for URL: {item.url}")
                 embedding = np.load(embedding_path)
-                results.append({"id": item.id, "url": item.url, "embedding": embedding.tolist(), "status": "success"})
+                results.append({"id": item.id, "url": item.url, "product_id": item.product_id, "embedding": embedding.tolist(), "status": "success"})
             else:
                 # 캐시된 임베딩 파일이 존재하지 않으면 이미지 다운로드하고 임베딩 계산
                 response = requests.get(item.url, stream=True)
@@ -87,10 +87,10 @@ async def get_or_compute_embeddings(downloaded_perfume_image_data: List[PerfumeI
                 embedding = embedding / np.linalg.norm(embedding)
                 np.save(embedding_path, embedding)
 
-                results.append({"id": item.id, "url": item.url, "embedding": embedding.tolist(), "status": "success"})
+                results.append({"id": item.id, "url": item.url, "product_id": item.product_id, "embedding": embedding.tolist(), "status": "success"})
         except Exception as e:
             logger.error(f"Failed to compute embedding for URL {item.url}: {e}")
-            results.append({"id": item.id, "url": item.url, "error": str(e), "status": "failed"})
+            results.append({"id": item.id, "url": item.url, "product_id": item.product_id, "error": str(e), "status": "failed"})
 
     return results
 

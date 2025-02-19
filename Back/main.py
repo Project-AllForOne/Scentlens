@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 db_images = []
 db_embeddings = []
 index = None
-perfume_data = []
+product_data = []
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -33,18 +33,18 @@ app.add_middleware(
 
 # 서버 시작 전 미리 실행할 코드; 서버를 initialize하여 데이터 로드, 이미지 다운로드, 임베딩 계산, FAISS 인덱스 생성을 미리 수행
 def init():
-    global db_images, db_embeddings, index, perfume_data
+    global db_images, db_embeddings, index, product_data
 
     # JSON 데이터 로드
-    perfume_image_data = load_json("./perfume_image.json", "perfume image")
-    perfume_data = load_json("./perfume.json", "perfume")
+    product_image_data = load_json("./product_image.json", "product_image.json")
+    product_data = load_json("./product.json", "product.json")
 
-    if not perfume_image_data or not perfume_data:
+    if not product_image_data or not product_data:
         logger.error("Initialization failed due to missing or invalid JSON data.")
         return
 
     # 이미지 다운로드
-    downloaded_images = download_images(perfume_image_data)
+    downloaded_images = download_images(product_image_data)
     if not downloaded_images:
         logger.error("Initialization failed due to image downloading errors.")
         return
@@ -73,9 +73,9 @@ def load_json(file_path, data_name):
         return None
 
 # 이미지 다운로드를 위한 배치 요청을 전송하고 응답을 반환
-def download_images(perfume_image_data):
+def download_images(product_image_data):
     try:
-        response = requests.post("http://localhost:8001/download_images/", json=perfume_image_data)
+        response = requests.post("http://localhost:8001/download_images/", json=product_image_data)
         if response.status_code == 200:
             logger.info("Successfully downloaded images.")
             return response.json()
@@ -106,7 +106,7 @@ def populate_db(downloaded_images, embeddings_data):
 
     for item in embeddings_data:
         if item["status"] == "success":
-            db_images.append({"id": item["id"], "url": item["url"]})
+            db_images.append({"id": item["id"], "url": item["url"], "product_id": item["product_id"]})
             embedding = torch.tensor(item["embedding"])
             db_embeddings.append(embedding)
         else:
@@ -129,41 +129,67 @@ def create_faiss_index():
         index = faiss.GpuIndexFlatIP(faiss.StandardGpuResources(), 1)
 
 # 임베딩값으로 향수 매칭
-def get_matching_perfumes(embedding, db_images, db_embeddings, perfume_data, threshold=0.3):
+def get_matching_products(embedding, db_images, db_embeddings, product_data, threshold=0.3, k=10, max_results=10):
     # FAISS 인덱스에서 검색
-    D, I = index.search(np.array(embedding).reshape(1, -1), k=10)
+    results = []
+    product_ids_set = set()  # 이미 처리된 제품 ID를 추적
+    batch = k * 2
 
-    results = [
-        {
-            "index": int(i),
-            "id": db_images[i]["id"],
-            "url": db_images[i]["url"],
-            "similarity": float(D[0][idx]),
-        }
-        for idx, i in enumerate(I[0])
-        if float(D[0][idx]) > threshold
-    ]
+    while len(product_ids_set) < max_results:
+        D, I = index.search(np.array(embedding).reshape(1, -1), k=batch)
+        
+        for idx, i in enumerate(I[0]):
+            similarity = float(D[0][idx])
+            if similarity > threshold:
+                product_id = db_images[i]["product_id"]
 
-    ids = [result["id"] for result in results]
-    matching_perfumes = [
+                # 이미 해당 제품이 결과에 포함되었는지 확인
+                if product_id not in product_ids_set:
+                    product_ids_set.add(product_id)
+
+                    results.append({
+                        "index": int(i),
+                        "id": db_images[i]["id"],
+                        "product_id": product_id,
+                        "url": db_images[i]["url"],
+                        "similarity": similarity,
+                    })
+
+                    # 결과가 충분히 모였으면 종료
+                    if len(product_ids_set) >= max_results:
+                        break
+
+        batch += k
+
+        # 결과가 부족하면 더 많은 검색을 진행
+        if max_results > len(product_ids_set):
+            continue
+        else:
+            break
+
+    # 해당 제품의 상세 정보를 가져옴
+    matching_products = [
         {
             "id": item["id"],
-            "name": item["name"],
+            "name": item["name_kr"],
             "brand": item["brand"],
-            "description": item["description"],
+            "description": item["content"],
             "similarity": next(
-                (result["similarity"] for result in results if result["id"] == item["id"]), None
+                (result["similarity"] for result in results if result["product_id"] == item["id"]), None
             ),
             "url": next(
-                (result["url"] for result in results if result["id"] == item["id"]), None
+                (result["url"] for result in results if result["product_id"] == item["id"]), None
             ),
         }
-        for item in perfume_data if item["id"] in ids
+        for item in product_data if item["id"] in product_ids_set
     ]
 
-    return sorted(matching_perfumes, key=lambda x: x["similarity"], reverse=True)
+    # 유사도 기준으로 내림차순 정렬
+    final_result = sorted(matching_products, key=lambda x: x["similarity"], reverse=True)[:max_results]
+    
+    return final_result
 
-@app.post("/get_perfume_details/")
+@app.post("/get_product_details/")
 async def search_image(file: UploadFile = File(...)):
     try:
         # GPU 임베딩 서비스 호출
@@ -178,13 +204,13 @@ async def search_image(file: UploadFile = File(...)):
             embedding = response.json().get("embedding")
             
             if embedding is not None:
-                matching_perfumes = get_matching_perfumes(embedding, db_images, db_embeddings, perfume_data)
+                matching_products = get_matching_products(embedding, db_images, db_embeddings, product_data)
 
-                return {"perfumes": sorted(matching_perfumes, key=lambda x: x["similarity"], reverse=True)}
+                return {"products": sorted(matching_products, key=lambda x: x["similarity"], reverse=True)}
             else:
                 return {"error": "No embedding found in the response"}
         else:
             return {"error": f"Failed to get embedding. Status code: {response.status_code}"}
     except Exception as e:
-        logger.error(f"Error retrieving perfume details: {e}")
+        logger.error(f"Error retrieving product details: {e}")
         return {"error": str(e)}
